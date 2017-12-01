@@ -2008,7 +2008,7 @@ void ButtonHandler()
             if (!restart_flag && !holdbutton[i] && (multipress[i] > 0) && (multipress[i] < MAX_BUTTON_COMMANDS +3)) {
               boolean single_press = false;
               if (multipress[i] < 3) {                    // Single or Double press
-                if ((SONOFF_DUAL == Settings.module) || (CH4 == Settings.module)) {
+                if ((SONOFF_DUAL == Settings.module) || (CH4 == Settings.module) || (SONOFF_DUAL_R2 == Settings.module)) {
                   single_press = true;
                 } else  {
                   single_press = (Settings.flag.button_swap +1 == multipress[i]);
