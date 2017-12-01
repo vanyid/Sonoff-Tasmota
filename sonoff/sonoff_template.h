@@ -194,6 +194,7 @@ enum SupportedModules {
   LUANIHVIO,
   KMC_70011,
   ARILUX,
+  SONOFF_DUAL_R2,
   MAXMODULE };
 
 /********************************************************************************************/
@@ -216,6 +217,7 @@ const uint8_t kNiceList[MAXMODULE] PROGMEM = {
   SONOFF_RF,
   SONOFF_TH,
   SONOFF_DUAL,
+  SONOFF_DUAL_R2,
   SONOFF_POW,
   SONOFF_4CH,
   SONOFF_4CHPRO,
@@ -739,7 +741,22 @@ const mytmplt kModules[MAXMODULE] PROGMEM = {
      GPIO_PWM3,        // GPIO13 RGB LED Blue
      GPIO_USER,        // GPIO14 RGBW LED White (optional - set to PWM4 for Cold White or Warm White)
      0, 0, 0
-  }
+  },
+  { "Sonoff Dual R2",   // Sonoff Dual R2 (ESP8285)
+     GPIO_USER,         // GPIO00 BUTTON0 on header (0=On, 1=Off)
+     GPIO_USER,         // GPIO01 Serial RXD and Optional sensor
+     0,
+     GPIO_USER,         // GPIO03 Serial TXD and Optional sensor
+     0,
+     GPIO_REL2,         // GPIO05 Relay 2 (0 = Off, 1 = On)
+     0, 0, 0,           // GPIO06 - 08 not used
+     GPIO_USER,         // GPIO09 BUTTON1 on header (0=On, 1=Off)
+     GPIO_KEY1,         // GPIO10 push button on casing
+     0,
+     GPIO_REL1,         // GPIO12 Relay 1 (0 = Off, 1 = On)
+     GPIO_LED1_INV,     // GPIO13 Blue Led (0 = On, 1 = Off)
+     0, 0, 0, 0         // GPIO14 - 16 and ADC pins are not used
+  },
 };
 
 #endif  // _SONOFF_TEMPLATE_H_
