@@ -882,8 +882,8 @@ void MqttDataCallback(char* topic, byte* data, unsigned int data_len)
       payload = 4;
     }
 
-//    snprintf_P(log_data, sizeof(log_data), PSTR("RSLT: Payload %d, Payload16 %d"), payload, payload16);
-//    AddLog(LOG_LEVEL_DEBUG);
+    snprintf_P(log_data, sizeof(log_data), PSTR("RSLT: Payload %d, Payload16 %d"), payload, payload16);
+    AddLog(LOG_LEVEL_DEBUG);
 
     int command_code = GetCommandCode(command, sizeof(command), type, kTasmotaCommands);
     if (CMND_BACKLOG == command_code) {
@@ -1516,6 +1516,11 @@ void MqttDataCallback(char* topic, byte* data, unsigned int data_len)
       snprintf_P(mqtt_data, sizeof(mqtt_data), S_JSON_COMMAND_SVALUE, command, D_DONE);
     }
 #endif  // DEBUG_THEO
+#ifdef THERMOSTAT
+    else if (ThermoCommand(type, index, dataBuf, data_len, payload)) {
+      // SERVICED
+    }
+#endif  // Hard Thermostat
     else {
       type = NULL;
     }
@@ -1892,6 +1897,8 @@ void PerformEverySecond()
   if (hlw_flg) {
     HlwMarginCheck();
   }
+
+  ThermoFunction(tele_period);
 
   if ((2 == RtcTime.minute) && latest_uptime_flag) {
     latest_uptime_flag = false;
