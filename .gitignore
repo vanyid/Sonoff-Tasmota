@@ -6,3 +6,5 @@
 .vscode/launch.json
 .vscode/settings.json
 lib/readme.txt
+sonoff/user_config.h
+platformio.ini
