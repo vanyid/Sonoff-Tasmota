@@ -804,6 +804,8 @@
 #undef USE_PROMETHEUS                            // Disable support for https://prometheus.io/ metrics exporting over HTTP /metrics endpoint
 #undef DEBUG_THEO                                // Disable debug code
 #undef USE_DEBUG_DRIVER                          // Disable debug code
+#undef USE_PID                                   // Disable the pid feature (+4.3k)
+#undef USE_TIMEPROP                              // Disable the timeprop feature (+1.2k)
 #endif  // FIRMWARE_MINIMAL
 
 #ifdef ESP32
