@@ -631,6 +631,8 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 #undef USE_ARDUINO_SLAVE                         // Disable support for Arduino Uno/Pro Mini via serial interface including flashing (+2k3 code, 44 mem)
 #undef DEBUG_THEO                                // Disable debug code
 #undef USE_DEBUG_DRIVER                          // Disable debug code
+#undef USE_PID                                   // Disable the pid feature (+4.3k)
+#undef USE_TIMEPROP                              // Disable the timeprop feature (+1.2k)
 #endif  // FIRMWARE_MINIMAL
 
 /*********************************************************************************************\
