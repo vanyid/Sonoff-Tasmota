@@ -123,8 +123,7 @@ void Timeprop_Every_Second() {
     int newState = timeprops[i].tick(UtcTime());
     if (newState != bitRead(currentRelayStates, relayNos[i]-1)){
       // remove the third parameter below if using tasmota prior to v6.0.0
-      ExecuteCommandPower(relayNos[i], newState,SRC_IGNORE);
-      ShowSensor(true);
+      ExecuteCommandPower(relayNos[i], newState, SRC_IGNORE);
     }
   }
 }
@@ -198,7 +197,8 @@ void ShowSensor(bool json)
 
   if (json)
   {
-    ResponseTime_P("");
+    Response_P("");
+    ResponseAppendTime();
   }
 
   for (int i = 0; i < TIMEPROP_NUM_OUTPUTS; i++)
@@ -250,15 +250,15 @@ boolean Xdrv91(byte function)
   case FUNC_EVERY_SECOND:
     Timeprop_Every_Second();
     break;
-  case FUNC_PREP_BEFORE_TELEPERIOD:
+  case FUNC_SET_POWER:
+    Timeprop_Xdrv_Power();
+    /* missing break is intentional */
+  case FUNC_AFTER_TELEPERIOD:
     ShowSensor(true);
     MqttPublishPrefixTopic_P(TELE, "TIME_PROP", Settings.flag.mqtt_sensor_retain);
     break;
   case FUNC_COMMAND:
     result = Timeprop_Command();
-    break;
-  case FUNC_SET_POWER:
-    Timeprop_Xdrv_Power();
     break;
 #ifdef USE_WEBSERVER
   case FUNC_WEB_SENSOR:
