@@ -764,10 +764,6 @@ void PerformEverySecond(void)
       }
     } else {
       tele_period++;
-      if (tele_period == Settings.tele_period -1) {
-        XsnsCall(FUNC_PREP_BEFORE_TELEPERIOD);
-        XdrvCall(FUNC_PREP_BEFORE_TELEPERIOD);
-      }
       if (tele_period >= Settings.tele_period) {
         tele_period = 0;
 
