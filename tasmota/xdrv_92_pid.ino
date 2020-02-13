@@ -166,7 +166,9 @@ void PID_Every_Second() {
   static int sec_counter = 0;
   // run the pid algorithm if run_pid_now is true or if the right number of seconds has passed or if too long has
   // elapsed since last pv update. If too long has elapsed the the algorithm will deal with that.
-  if (run_pid_now  ||  UtcTime() - last_pv_update_secs > max_interval  ||  (update_secs != 0 && sec_counter++ % update_secs  ==  0)) {
+  run_pid_now |= (update_secs != 0 && sec_counter++ % update_secs  ==  0);
+
+  if (run_pid_now  ||  UtcTime() - last_pv_update_secs > max_interval ) {
     run_pid();
     run_pid_now = false;
   }
@@ -179,9 +181,11 @@ void PID_Show_Sensor() {
   // e.g. "{"Time":"2018-03-13T16:48:05","DS18B20":{"Temperature":22.0},"TempUnit":"C"}"
   snprintf_P(log_data, sizeof(log_data), "PID_Show_Sensor: mqtt_data: %s", mqtt_data);
   AddLog(LOG_LEVEL_INFO);
-  StaticJsonBuffer<400> jsonBuffer;
+
+  StaticJsonBuffer<1024> jsonBuffer;
+  String jsonStr = mqtt_data;  // Move from stack to heap to fix watchdogs (20180626)
   // force mqtt_data to read only to stop parse from overwriting it
-  JsonObject& data_json = jsonBuffer.parseObject((const char*)mqtt_data);
+  JsonObject &data_json = jsonBuffer.parseObject(jsonStr);
   if (data_json.success()) {
     const char* value = data_json["AM2301"]["Temperature"];
     // check that something was found and it contains a number
@@ -223,14 +227,13 @@ boolean PID_Command()
   boolean serviced = true;
   uint8_t ua_prefix_len = strlen(D_CMND_PID); // to detect prefix of command
 
-  snprintf_P(log_data, sizeof(log_data), "Command called: "
-    "index: %d data_len: %d payload: %d topic: %s data: %s",
+  AddLog_P2(LOG_LEVEL_DEBUG, 
+    PSTR("Command called: index: %d data_len: %d payload: %d topic: %s data: %s"),
     XdrvMailbox.index,
     XdrvMailbox.data_len,
     XdrvMailbox.payload,
     (XdrvMailbox.payload >= 0 ? XdrvMailbox.topic : ""),
     (XdrvMailbox.data_len >= 0 ? XdrvMailbox.data : ""));
-  AddLog(LOG_LEVEL_INFO);
 
   if (0 == strncasecmp_P(XdrvMailbox.topic, PSTR(D_CMND_PID), ua_prefix_len)) {
     // command starts with pid_
@@ -238,8 +241,6 @@ boolean PID_Command()
     serviced = true;
     switch (command_code) {
       case CMND_PID_SETPV:
-        snprintf_P(log_data, sizeof(log_data), "PID command setpv");
-        AddLog(LOG_LEVEL_INFO);
         last_pv_update_secs = UtcTime();
         pid.setPv(atof(XdrvMailbox.data), last_pv_update_secs);
         // also trigger running the pid algorithm if we have been told to run it each pv sample
@@ -247,68 +248,49 @@ boolean PID_Command()
           // this runs it at the next second
           run_pid_now = true;
         }
+        AddLog_P2(LOG_LEVEL_INFO, "PID command setpv");
         break;
 
       case CMND_PID_SETSETPOINT:
-        snprintf_P(log_data, sizeof(log_data), "PID command setsetpoint");
-        AddLog(LOG_LEVEL_INFO);
         pid.setSp(atof(XdrvMailbox.data));
         // also trigger new pid calculation
         run_pid_now = true;
         break;
 
       case CMND_PID_SETPROPBAND:
-        snprintf_P(log_data, sizeof(log_data), "PID command propband");
-        AddLog(LOG_LEVEL_INFO);
         pid.setPb(atof(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETINTEGRAL_TIME:
-        snprintf_P(log_data, sizeof(log_data), "PID command Ti");
-        AddLog(LOG_LEVEL_INFO);
         pid.setTi(atof(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETDERIVATIVE_TIME:
-        snprintf_P(log_data, sizeof(log_data), "PID command Td");
-        AddLog(LOG_LEVEL_INFO);
         pid.setTd(atof(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETINITIAL_INT:
-        snprintf_P(log_data, sizeof(log_data), "PID command initial int");
-        AddLog(LOG_LEVEL_INFO);
         pid.setInitialInt(atof(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETDERIV_SMOOTH_FACTOR:
-        snprintf_P(log_data, sizeof(log_data), "PID command deriv smooth");
-        AddLog(LOG_LEVEL_INFO);
         pid.setDSmooth(atof(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETAUTO:
-        snprintf_P(log_data, sizeof(log_data), "PID command auto");
-        AddLog(LOG_LEVEL_INFO);
         pid.setAuto(atoi(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETMANUAL_POWER:
-        snprintf_P(log_data, sizeof(log_data), "PID command manual power");
-        AddLog(LOG_LEVEL_INFO);
         pid.setManualPower(atof(XdrvMailbox.data));
         break;
 
       case CMND_PID_SETMAX_INTERVAL:
-      snprintf_P(log_data, sizeof(log_data), "PID command set max interval");
-      AddLog(LOG_LEVEL_INFO);
       max_interval = atoi(XdrvMailbox.data);
       pid.setMaxInterval(max_interval);
       break;
 
       case CMND_PID_SETUPDATE_SECS:
-        snprintf_P(log_data, sizeof(log_data), "PID command set update secs");
-        AddLog(LOG_LEVEL_INFO);
         update_secs = atoi(XdrvMailbox.data) ;
         if (update_secs < 0) update_secs = 0;
         break;
@@ -333,9 +315,19 @@ static void run_pid()
   double power = pid.tick(UtcTime());
   char buf[10];
   pid_output = power;
-  dtostrfd(power, 3, buf);
-  snprintf_P(mqtt_data, sizeof(mqtt_data), PSTR("{\"%s\":\"%s\"}"), "power", buf);
-  MqttPublishPrefixTopic_P(TELE, "PID", false);
+
+  /* Report only in case of normal operation, if sensor value missing, prevent 1s repetition */
+  if (run_pid_now)
+  {
+    dtostrfd(power, 3, buf);
+
+    Response_P("");
+    ResponseAppendTime();
+    ResponseAppend_P(PSTR(",\"power\":%s"), buf);
+    ResponseJsonEnd();
+    MqttPublishPrefixTopic_P(TELE, "PID", false);
+  }
+
 #if defined PID_USE_TIMPROP
     // send power to appropriate timeprop output
     Timeprop_Set_Power( PID_USE_TIMPROP-1, power );
