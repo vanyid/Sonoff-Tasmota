@@ -615,6 +615,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 #undef USE_DDSU666                               // Disable support for Chint DDSU666 Modbus energy monitor (+0k6 code)
 #undef USE_SOLAX_X1                              // Disable support for Solax X1 series Modbus log info (+3k1 code)
 #undef USE_LE01MR                                // Disable support for F&F LE-01MR Modbus energy meter (+2k code)
+#undef USE_RESISTIVE_LOAD                        // Disable support for resistive load energy measurement
 
 #undef USE_DHT                                   // Disable support for DHT11, AM2301 (DHT21, DHT22, AM2302, AM2321) and SI7021 Temperature and Humidity sensor
 #undef USE_MAX31855                              // Disable MAX31855 K-Type thermocouple sensor using softSPI

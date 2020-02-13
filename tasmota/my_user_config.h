@@ -546,6 +546,7 @@
 //#define USE_HM10                                 // Add support for HM-10 as a BLE-bridge for the LYWSD03 (+5k1 code)
 
 // -- Power monitoring sensors --------------------
+#define USE_ENERGY_SENSOR
 #define USE_ENERGY_MARGIN_DETECTION              // Add support for Energy Margin detection (+1k6 code)
   #define USE_ENERGY_POWER_LIMIT                 // Add additional support for Energy Power Limit detection (+1k2 code)
 #define USE_PZEM004T                             // Add support for PZEM004T Energy monitor (+2k code)
@@ -566,6 +567,7 @@
 //#define USE_LE01MR                               // Add support for F&F LE-01MR Modbus energy monitor (+1k code)
   #define LE01MR_SPEED         9600              // LE-01MR modbus baudrate (default: 9600)
   #define LE01MR_ADDR          1                 // LE-01MR modbus address (default: 0x01)
+  #define USE_RESISTIVE_LOAD                     // Resistive constant power measurement
 
 // -- Low level interface devices -----------------
 #define USE_DHT                                  // Add support for DHT11, AM2301 (DHT21, DHT22, AM2302, AM2321) and SI7021 Temperature and Humidity sensor (1k6 code)
