@@ -402,7 +402,7 @@
 
 // -- KNX IP Protocol -----------------------------
 //#define USE_KNX                                  // Enable KNX IP Protocol Support (+9.4k code, +3k7 mem)
-  #define USE_KNX_WEB_MENU                       // Enable KNX WEB MENU (+8.3k code, +144 mem)
+//  #define USE_KNX_WEB_MENU                       // Enable KNX WEB MENU (+8.3k code, +144 mem)
 
 // -- HTTP ----------------------------------------
 #define USE_WEBSERVER                            // Enable web server and Wifi Manager (+66k code, +8k mem)
@@ -410,8 +410,8 @@
   #define WEB_USERNAME         "admin"           // Web server Admin mode user name
 //  #define USE_JAVASCRIPT_ES6                     // Enable ECMAScript6 syntax using less JavaScript code bytes (fails on IE11)
 //  #define USE_WEBSEND_RESPONSE                   // Enable command WebSend response message (+1k code)
-  #define USE_EMULATION_HUE                      // Enable Hue Bridge emulation for Alexa (+14k code, +2k mem common)
-  #define USE_EMULATION_WEMO                     // Enable Belkin WeMo emulation for Alexa (+6k code, +2k mem common)
+//  #define USE_EMULATION_HUE                      // Enable Hue Bridge emulation for Alexa (+14k code, +2k mem common)
+//  #define USE_EMULATION_WEMO                     // Enable Belkin WeMo emulation for Alexa (+6k code, +2k mem common)
 
 // -- mDNS ----------------------------------------
 #define USE_DISCOVERY                            // Enable mDNS for the following services (+8k code or +23.5k code with core 2_5_x, +0.3k mem)
@@ -470,7 +470,7 @@
 #define USE_SONOFF_D1                            // Add support for Sonoff D1 Dimmer (+0k7 code)
 
 // -- Optional light modules ----------------------
-#define USE_WS2812                               // WS2812 Led string using library NeoPixelBus (+5k code, +1k mem, 232 iram) - Disable by //
+//#define USE_WS2812                               // WS2812 Led string using library NeoPixelBus (+5k code, +1k mem, 232 iram) - Disable by //
 //  #define USE_WS2812_DMA                         // DMA supports only GPIO03 (= Serial RXD) (+1k mem). When USE_WS2812_DMA is enabled expect Exceptions on Pow
   #define USE_WS2812_HARDWARE  NEO_HW_WS2812     // Hardware type (NEO_HW_WS2812, NEO_HW_WS2812X, NEO_HW_WS2813, NEO_HW_SK6812, NEO_HW_LC8812, NEO_HW_APA106)
   #define USE_WS2812_CTYPE     NEO_GRB           // Color type (NEO_RGB, NEO_GRB, NEO_BRG, NEO_RBG, NEO_RGBW, NEO_GRBW)
@@ -489,11 +489,11 @@
 //#define USE_ADC_VCC                              // Display Vcc in Power status. Disable for use as Analog input on selected devices
 
 // -- One wire sensors ----------------------------
-#define USE_DS18x20                              // Add support for DS18x20 sensors with id sort, single scan and read retry (+2k6 code)
+//#define USE_DS18x20                              // Add support for DS18x20 sensors with id sort, single scan and read retry (+2k6 code)
 //  #define W1_PARASITE_POWER                      // Optimize for parasite powered sensors
 
 // -- I2C sensors ---------------------------------
-#define USE_I2C                                  // I2C using library wire (+10k code, 0k2 mem, 124 iram)
+//#define USE_I2C                                  // I2C using library wire (+10k code, 0k2 mem, 124 iram)
 
 #ifdef USE_I2C
 //  #define USE_SHT                                // [I2cDriver8] Enable SHT1X sensor (+1k4 code)
@@ -639,10 +639,10 @@
 #define USE_ENERGY_SENSOR
 #define USE_ENERGY_MARGIN_DETECTION              // Add support for Energy Margin detection (+1k6 code)
   #define USE_ENERGY_POWER_LIMIT                 // Add additional support for Energy Power Limit detection (+1k2 code)
-#define USE_PZEM004T                             // Add support for PZEM004T Energy monitor (+2k code)
-#define USE_PZEM_AC                              // Add support for PZEM014,016 Energy monitor (+1k1 code)
-#define USE_PZEM_DC                              // Add support for PZEM003,017 Energy monitor (+1k1 code)
-#define USE_MCP39F501                            // Add support for MCP39F501 Energy monitor as used in Shelly 2 (+3k1 code)
+//#define USE_PZEM004T                             // Add support for PZEM004T Energy monitor (+2k code)
+//#define USE_PZEM_AC                              // Add support for PZEM014,016 Energy monitor (+1k1 code)
+//#define USE_PZEM_DC                              // Add support for PZEM003,017 Energy monitor (+1k1 code)
+//#define USE_MCP39F501                            // Add support for MCP39F501 Energy monitor as used in Shelly 2 (+3k1 code)
 //#define USE_SDM120                               // Add support for Eastron SDM120-Modbus energy monitor (+1k1 code)
   #define SDM120_SPEED         2400              // SDM120-Modbus RS485 serial speed (default: 2400 baud)
 //#define USE_SDM630                               // Add support for Eastron SDM630-Modbus energy monitor (+0k6 code)
@@ -686,12 +686,12 @@
 // You can reduce this size by disabling some protocols in "lib/IRremoteESP8266.x.x.x/src/IRremoteESP8266.h"
 
 // -- IR Remote features - subset of IR protocols --------------------------
-#define USE_IR_REMOTE                            // Send IR remote commands using library IRremoteESP8266 and ArduinoJson (+4k3 code, 0k3 mem, 48 iram)
+//#define USE_IR_REMOTE                            // Send IR remote commands using library IRremoteESP8266 and ArduinoJson (+4k3 code, 0k3 mem, 48 iram)
   #define USE_IR_SEND_NEC                        // Support IRsend NEC protocol
   #define USE_IR_SEND_RC5                        // Support IRsend Philips RC5 protocol
   #define USE_IR_SEND_RC6                        // Support IRsend Philips RC6 protocol
 
-  #define USE_IR_RECEIVE                         // Support for IR receiver (+7k2 code, 264 iram)
+//  #define USE_IR_RECEIVE                         // Support for IR receiver (+7k2 code, 264 iram)
     #define IR_RCV_BUFFER_SIZE      100          // Max number of packets allowed in capture buffer (default 100 (*2 bytes ram))
     #define IR_RCV_TIMEOUT          15           // Number of milli-Seconds of no-more-data before we consider a message ended (default 15)
     #define IR_RCV_MIN_UNKNOWN_SIZE 6            // Set the smallest sized "UNKNOWN" message packets we actually care about (default 6, max 255)
