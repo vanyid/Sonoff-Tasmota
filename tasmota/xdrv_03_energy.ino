@@ -1168,11 +1168,12 @@ bool Xdrv03(uint8_t function)
       case FUNC_SERIAL:
         result = XnrgCall(FUNC_SERIAL);
         break;
-#ifdef USE_ENERGY_MARGIN_DETECTION
       case FUNC_SET_POWER:
+#ifdef USE_ENERGY_MARGIN_DETECTION
         Energy.power_steady_counter = 2;
-        break;
 #endif  // USE_ENERGY_MARGIN_DETECTION
+        XnrgCall(FUNC_SET_POWER);
+        break;
       case FUNC_COMMAND:
         result = DecodeCommand(kEnergyCommands, EnergyCommand);
         break;

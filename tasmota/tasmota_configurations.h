@@ -785,6 +785,7 @@
 #undef USE_BL0940                                // Disable support for BL0940 Energy monitor as used in Blitzwolf SHP-10 (+1k6 code)
 #undef USE_TELEINFO                              // Disable support for French Energy Provider metering telemetry
 #undef USE_IEM3000                               // Disable support for Schneider Electric iEM3000-Modbus series energy monitor (+0k8 code)
+#undef USE_RESISTIVE_LOAD                        // Disable support for resistive load energy measurement
 
 #undef USE_DHT                                   // Disable support for DHT11, AM2301 (DHT21, DHT22, AM2302, AM2321) and SI7021 Temperature and Humidity sensor
 #undef USE_MAX31855                              // Disable MAX31855 K-Type thermocouple sensor using softSPI
