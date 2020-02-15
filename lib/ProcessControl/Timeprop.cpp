@@ -19,6 +19,7 @@
 
 
 #include "Timeprop.h"
+#include "Arduino.h"
 
 void Timeprop::initialise( int cycleTime, int deadTime, unsigned char invert, float fallbackPower, int maxUpdateInterval,
   unsigned long nowSecs) {
@@ -30,6 +31,7 @@ void Timeprop::initialise( int cycleTime, int deadTime, unsigned char invert, fl
 
   m_dtoc = (float)deadTime/cycleTime;
   m_opState = 0;
+  m_startTime = nowSecs - m_cycleTime * m_fallbackPower;
   setPower(m_fallbackPower, nowSecs);
 }
 
@@ -42,6 +44,15 @@ void Timeprop::setPower( float power, unsigned long nowSecs ) {
   }
   m_power = power;
   m_lastPowerUpdateTime = nowSecs;
+};
+
+/* set current power required 0:1, given power and current time in seconds */
+void Timeprop::ReSetPower( float power, unsigned long nowSecs ) {
+  setPower(power, nowSecs);
+
+  //m_startTime = (signed long)(nowSecs - (unsigned long)((m_cycleTime / 2) + map((unsigned long)power*1000, 1000, 0, (m_cycleTime / 2), m_cycleTime) / 1000));
+
+  m_startTime = nowSecs - (unsigned long)((unsigned long)m_cycleTime * (unsigned long)(power*1000)) / 1000 / 2;
 };
 
 /* called regularly to provide new output value */
@@ -58,6 +69,7 @@ int Timeprop::tick( unsigned long nowSecs) {
     setPower(m_fallbackPower, nowSecs);
   }
 
+  nowSecs = nowSecs - m_startTime;
   wave = (nowSecs % m_cycleTime)/(float)m_cycleTime;
   // determine direction of travel and convert to triangular wave
   if (wave < 0.5) {

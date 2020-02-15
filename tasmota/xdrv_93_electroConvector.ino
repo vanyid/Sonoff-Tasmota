@@ -1,5 +1,5 @@
 /*
-  xdrv_92_pid.ino - PID algorithm plugin for Sonoff-Tasmota
+  xdrv_93_electroConvector.ino - Elcectric heater thermostat based on PID algorithm plugin for Tasmota
   Copyright (C) 2018 Colin Law and Thomas Herrmann
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -121,8 +121,7 @@
  *
 **/
 
-
-#ifdef USE_PID
+#ifdef USE_ELECTRO_CONVECTOR_HEATER
 
 # include "PID.h"
 
@@ -152,7 +151,12 @@ static int update_secs = PID_UPDATE_SECS <= 0  ?  0  :  PID_UPDATE_SECS;   // ho
 static int max_interval = PID_MAX_INTERVAL;
 static unsigned long last_pv_update_secs = 0;
 static boolean run_pid_now = false;     // tells PID_Every_Second to run the pid algorithm
+static boolean reinit_timeprop = false;
 static double pid_output;
+
+static  double outpower[2] = { 500, 1000 };
+static  double powerDistr[2] = { outpower[0] / (outpower[0] + outpower[1]), outpower[1] / (outpower[0] + outpower[1]) };  // 0.33, 0.66
+static  double powerRate = outpower[0] / outpower[1];          
 
 void PID_Init()
 {
@@ -164,6 +168,8 @@ void PID_Init()
 
 void PID_Every_Second() {
   static int sec_counter = 0;
+
+
   // run the pid algorithm if run_pid_now is true or if the right number of seconds has passed or if too long has
   // elapsed since last pv update. If too long has elapsed the the algorithm will deal with that.
   run_pid_now |= (update_secs != 0 && sec_counter++ % update_secs  ==  0);
@@ -172,6 +178,7 @@ void PID_Every_Second() {
     run_pid();
     run_pid_now = false;
   }
+
 }
 
 void PID_Show_Sensor() {
@@ -255,6 +262,7 @@ boolean PID_Command()
         pid.setSp(atof(XdrvMailbox.data));
         // also trigger new pid calculation
         run_pid_now = true;
+        reinit_timeprop = true;
         break;
 
       case CMND_PID_SETPROPBAND:
@@ -329,8 +337,40 @@ static void run_pid()
   }
 
 #if defined PID_USE_TIMPROP
-    // send power to appropriate timeprop output
-    Timeprop_Set_Power( PID_USE_TIMPROP-1, power, false );
+  // send power to appropriate timeprop output
+  // calculate the control band for 2 stage electric heaters
+  double duty[2] = { 0.0, 0.0 };
+
+
+  if (power < 0.01)
+  {
+    duty[0] = 0.0;
+    duty[1] = 0.0;
+  }
+  else if (power <= powerDistr[0])   /* 0.0 --- 0.33  PWM500*/
+  {
+    duty[0] = mapfloat(power, 0.0, powerDistr[0], 0.0, 1.0);
+    duty[1] = 0.0;
+  }
+  else if (power <= powerDistr[1])  /* 0.331 --- 0.66   PWM1000*/
+  {
+    duty[0] = 0.0;
+    duty[1] = mapfloat(power, powerDistr[0], powerDistr[1], powerRate, 1.0);
+  }
+  else if (power <= 1.0)  /* 0.825 --- 1.0   PWM1000 + ON500*/
+  {
+    duty[0] = 1.0;
+    duty[1] = mapfloat(power, powerDistr[1], 1.0, 1 - powerRate, 1.0);
+  }
+  else
+  {
+    duty[0] = 1.0;
+    duty[1] = 1.0;
+  }
+
+  Timeprop_Set_Power( 0, duty[0], reinit_timeprop );
+  Timeprop_Set_Power( 1, duty[1], reinit_timeprop );
+  reinit_timeprop = false;
 #endif // PID_USE_TIMPROP
 }
 
@@ -338,9 +378,9 @@ static void run_pid()
  * Interface
 \*********************************************************************************************/
 
-#define XDRV_92  92
+#define XDRV_93  93
 
-boolean Xdrv92(byte function)
+boolean Xdrv93(byte function)
 {
   boolean result = false;
   char tmpStr[33];
@@ -362,6 +402,10 @@ boolean Xdrv92(byte function)
   case FUNC_WEB_SENSOR:
     dtostrfd(pid_output, 3, tmpStr);
     WSContentSend_PD(PSTR("{s}PID factor:{m}%s{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
+    dtostrfd(pid_output * (outpower[0] + outpower[1]), 1, tmpStr);
+    WSContentSend_PD(PSTR("{s}Needed power:{m}%s " D_UNIT_WATT "{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
+    dtostrfd(pid.getSp(), 1, tmpStr);
+    WSContentSend_PD(PSTR("{s}Thermostat setpoint:{m}%s&deg;{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
   break;
 #endif
   case FUNC_COMMAND:
@@ -371,4 +415,4 @@ boolean Xdrv92(byte function)
   return result;
 }
 
-#endif // USE_TIMEPROP
+#endif // USE_ELECTRO_CONVECTOR_HEATER

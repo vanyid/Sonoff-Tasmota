@@ -94,16 +94,19 @@ static long currentRelayStates = 0;  // current actual relay states. Bit 0 first
 
 /* call this from elsewhere if required to set the power value for one of the timeprop instances */
 /* index specifies which one, 0 up */
-void Timeprop_Set_Power( int index, float power )
+void Timeprop_Set_Power( int index, float power, boolean actNow )
 {
   if (index >= 0  &&  index < TIMEPROP_NUM_OUTPUTS)
   {
-    timeprops[index].setPower( power, UtcTime());
+    if (actNow) { timeprops[index].ReSetPower( power, UtcTime()); }
+    else        { timeprops[index].setPower  ( power, UtcTime()); }
   }
 }
 
 void Timeprop_Init()
 {
+  unsigned long preTime;
+
   snprintf_P(log_data, sizeof(log_data), "Timeprop Init");
   AddLog(LOG_LEVEL_INFO);
   int cycleTimes[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_CYCLETIMES};

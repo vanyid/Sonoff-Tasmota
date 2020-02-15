@@ -807,6 +807,7 @@
 #undef USE_DEBUG_DRIVER                          // Disable debug code
 #undef USE_PID                                   // Disable the pid feature (+4.3k)
 #undef USE_TIMEPROP                              // Disable the timeprop feature (+1.2k)
+#undef USE_ELECTRO_CONVECTOR_HEATER              // Disable Electric Heater Thermostat
 #endif  // FIRMWARE_MINIMAL
 
 #ifdef ESP32

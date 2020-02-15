@@ -65,6 +65,8 @@ public:
 
   /* set current power required 0:1, given power and current time in seconds */
   void setPower( float power, unsigned long nowSecs );
+  /* activate output immediately */
+  void ReSetPower( float power, unsigned long nowSecs );
 
   /* called regularly to provide new output value */
   /* returns new o/p state 0, 1 */
@@ -88,6 +90,7 @@ private:
   unsigned long m_lastPowerUpdateTime;   // the time of last power update secs
   float m_wave;
   float m_effectivePower;
+  unsigned long m_startTime;
 
 };
 
