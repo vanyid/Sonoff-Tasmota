@@ -55,7 +55,8 @@ public:
   void setPv( double pv, unsigned long nowSecs );
 
   // methods to modify configuration data
-  void setSp( double setpoint );
+  void   setSp( double setpoint );
+  double getSp(void)  { return m_setpoint; }
   void setPb( double prop_band );
   void setTi( double t_integral );
   void setTd( double t_derivative );

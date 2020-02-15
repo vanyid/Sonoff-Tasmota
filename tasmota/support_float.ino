@@ -19,6 +19,10 @@
 
 //#ifdef ARDUINO_ESP8266_RELEASE_2_3_0
 // Functions not available in 2.3.0
+float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+ return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 float fmodf(float x, float y)
 {
