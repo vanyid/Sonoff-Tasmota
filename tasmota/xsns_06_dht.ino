@@ -302,6 +302,56 @@ void DhtShow(bool json)
     dtostrfd(Dht[i].h, Settings.flag2.humidity_resolution, humidity);
 
     if (json) {
+      if ((tele_period == 0)
+            &&
+          !(
+            (Settings.iotGuruNodeKey[0] == 0x00)
+            ||
+            (Settings.iotGuruNodeKey[0] == '-' && Settings.iotGuruNodeKey[1] == 0x00)
+          )
+      )
+      {
+        HTTPClient httpClient;
+        String nodeKey = String(Settings.iotGuruNodeKey);
+        String url;
+        int code;
+        char locaseType[12];
+
+        LowerCase(locaseType, Dht[i].stype);
+
+        if (!isnan(Dht[i].t)) {
+          url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
+                "/" + locaseType + "_" + "temperature" + "/" + temperature;
+          httpClient.useHTTP10(true);
+          httpClient.setTimeout(1000);
+
+          yield();
+          httpClient.begin(url);
+          code = httpClient.GET();
+          httpClient.end();
+          yield();
+
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("Temp send. exitcode=%d"), code);
+        }
+
+        if (!isnan(Dht[i].h)) {
+          url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
+                "/" + locaseType + "_" + "humidity" + "/" + humidity;
+          httpClient.useHTTP10(true);
+          httpClient.setTimeout(1000);
+
+          yield();
+          httpClient.begin(url);
+          code = httpClient.GET();
+          httpClient.end();
+          yield();
+
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("humidity send. exitcode=%d"), code);
+        }
+      }
+
       ResponseAppend_P(JSON_SNS_TEMPHUM, Dht[i].stype, temperature, humidity);
 #ifdef USE_DOMOTICZ
       if ((0 == tele_period) && (0 == i)) {

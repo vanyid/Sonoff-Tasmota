@@ -466,8 +466,9 @@ struct SYSCFG {
   uint8_t       sps30_inuse_hours;         // F02
   uint8_t       hotplug_scan;              // F03
   uint8_t       reserved1;                 // F04 - reserved for s-hadinger
+  char          iotGuruNodeKey[24];        // F05 - idh4XPlK5bq72b2y-SBAsU
 
-  uint8_t       free_f05[207];             // F05
+  uint8_t       free_f05[183];             // F1D
 
   uint32_t      bootcount_reset_time;      // FD4
   int           adc_param4;                // FD8

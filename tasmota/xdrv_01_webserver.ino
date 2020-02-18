@@ -2803,7 +2803,7 @@ const char kWebCommands[] PROGMEM = "|"  // No prefix
   D_CMND_SENDMAIL "|"
 #endif
   D_CMND_WEBSERVER "|" D_CMND_WEBPASSWORD "|" D_CMND_WEBLOG "|" D_CMND_WEBREFRESH "|" D_CMND_WEBSEND "|" D_CMND_WEBCOLOR "|"
-  D_CMND_WEBSENSOR "|" D_CMND_WEBBUTTON "|" D_CMND_CORS;
+  D_CMND_WEBSENSOR "|" D_CMND_WEBBUTTON "|" D_CMND_CORS "|" D_CMND_IOTGURU_NODE;
 
 void (* const WebCommand[])(void) PROGMEM = {
 #ifdef USE_EMULATION
@@ -2813,7 +2813,7 @@ void (* const WebCommand[])(void) PROGMEM = {
   &CmndSendmail,
 #endif
   &CmndWebServer, &CmndWebPassword, &CmndWeblog, &CmndWebRefresh, &CmndWebSend, &CmndWebColor,
-  &CmndWebSensor, &CmndWebButton, &CmndCors };
+  &CmndWebSensor, &CmndWebButton, &CmndCors, &CmndIoTGuruNode };
 
 /*********************************************************************************************\
  * Commands
@@ -2954,6 +2954,14 @@ void CmndCors(void)
     SettingsUpdateText(SET_CORS, (SC_CLEAR == Shortcut()) ? "" : (SC_DEFAULT == Shortcut()) ? WEB_PASSWORD : XdrvMailbox.data);
   }
   ResponseCmndChar(SettingsText(SET_CORS));
+}
+
+void CmndIoTGuruNode(void)
+{
+  if (XdrvMailbox.data_len > 0) {
+    memcpy(Settings.iotGuruNodeKey, XdrvMailbox.data, XdrvMailbox.data_len);
+  }
+  ResponseCmndChar(Settings.iotGuruNodeKey);
 }
 
 /*********************************************************************************************\
