@@ -735,7 +735,8 @@
                                                  // If not using the sensor then you can supply process values via MQTT using
                                                  // cmnd pid_pv
 
-
+  #define IOT_GURU_BASE_URL     "http://api.iotguru.cloud/"
+//  #define IOT_GURU_SAVE_MEASUREMENT IOT_GURU_BASE_URL "measurement/create/"
 /*********************************************************************************************\
  * Debug features
 \*********************************************************************************************/
