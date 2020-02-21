@@ -40,6 +40,10 @@ void PID::initialise( double setpoint, double prop_band, double t_integral, doub
   m_mode_auto= mode_auto;
   m_manual_op = manual_op;
 
+  m_last_sample_time = 0;
+  m_last_pv_update_time = 0;
+  m_last_power = 0.0;
+
   m_initialised = 1;
 
 }

@@ -172,7 +172,12 @@ void PID_Every_Second() {
 
   // run the pid algorithm if run_pid_now is true or if the right number of seconds has passed or if too long has
   // elapsed since last pv update. If too long has elapsed the the algorithm will deal with that.
-  run_pid_now |= (update_secs != 0 && sec_counter++ % update_secs  ==  0);
+  if (( update_secs != 0 ) && ( sec_counter % update_secs == 0) )
+  {
+    run_pid_now = true;
+    sec_counter = 0;
+  }
+  sec_counter++;
 
   if (run_pid_now  ||  UtcTime() - last_pv_update_secs > max_interval ) {
     run_pid();
