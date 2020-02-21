@@ -154,7 +154,7 @@ static boolean run_pid_now = false;     // tells PID_Every_Second to run the pid
 static boolean reinit_timeprop = false;
 static double pid_output;
 
-static  double outpower[2] = { 500, 1000 };
+static  double outpower[2] = { 400, 1250 };
 static  double powerDistr[2] = { outpower[0] / (outpower[0] + outpower[1]), outpower[1] / (outpower[0] + outpower[1]) };  // 0.33, 0.66
 static  double powerRate = outpower[0] / outpower[1];          
 

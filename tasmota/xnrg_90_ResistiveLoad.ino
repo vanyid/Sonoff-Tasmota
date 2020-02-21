@@ -28,7 +28,7 @@
 struct RESLOAD {
   unsigned long energy_period_counter = 0;
 
-  unsigned long power_load[2] = { 500, 1000 };   /* W */
+  unsigned long power_load[2] = { 400, 1250 };   /* W */
 
   unsigned long currentRelayStates;
 } ResLoad;
