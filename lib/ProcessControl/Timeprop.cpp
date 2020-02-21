@@ -50,9 +50,7 @@ void Timeprop::setPower( float power, unsigned long nowSecs ) {
 void Timeprop::ReSetPower( float power, unsigned long nowSecs ) {
   setPower(power, nowSecs);
 
-  //m_startTime = (signed long)(nowSecs - (unsigned long)((m_cycleTime / 2) + map((unsigned long)power*1000, 1000, 0, (m_cycleTime / 2), m_cycleTime) / 1000));
-
-  m_startTime = nowSecs - (unsigned long)((unsigned long)m_cycleTime * (unsigned long)(power*1000)) / 1000 / 2;
+  m_startTime = nowSecs - ( map(1000 * power, 1000, 0, m_cycleTime / 2, m_cycleTime) );
 };
 
 /* called regularly to provide new output value */
