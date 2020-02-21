@@ -194,7 +194,12 @@ void PID_Show_Sensor() {
   // force mqtt_data to read only to stop parse from overwriting it
   JsonObject &data_json = jsonBuffer.parseObject(jsonStr);
   if (data_json.success()) {
-    const char* value = data_json["AM2301"]["Temperature"];
+    const char* value = NULL;
+
+    value = data_json[D_SENSOR_DHT11]["Temperature"];
+    if (value == NULL) { value = data_json[D_SENSOR_AM2301]["Temperature"]; }
+    else if (value == NULL) { value = data_json[D_SENSOR_SI7021]["Temperature"]; }
+
     // check that something was found and it contains a number
     if (value != NULL && strlen(value) > 0 && (isdigit(value[0]) || (value[0] == '-' && isdigit(value[1])) ) ) {
       snprintf_P(log_data, sizeof(log_data), "PID_Show_Sensor: Temperature: %s", value);
