@@ -226,6 +226,31 @@ void PID_Show_Sensor() {
     snprintf_P(log_data, sizeof(log_data), "PID_Show_Sensor - json parse failed");
     AddLog(LOG_LEVEL_INFO);
   }
+
+#ifdef IOT_GURU_BASE_URL
+  HTTPClient httpClient;
+  String nodeKey = String(Settings.iotGuruNodeKey);
+  String url;
+  int code;
+  char tmpStr[10];
+
+  dtostrfd(pid_output * (outpower[0] + outpower[1]), 1, tmpStr);
+  url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
+        "/heater_power/" + String(tmpStr);
+
+  httpClient.useHTTP10(true);
+  httpClient.setTimeout(1000);
+
+  yield();
+  httpClient.begin(url);
+  code = httpClient.GET();
+  httpClient.end();
+  yield();
+
+  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
+  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("PID power send. exitcode=%d"), code);
+#endif
+
 }
 
 
