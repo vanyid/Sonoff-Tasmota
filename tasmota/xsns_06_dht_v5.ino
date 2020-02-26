@@ -234,14 +234,17 @@ void DhtShow(bool json)
 
     if (json) {
       if ((tele_period == 0)
+#ifdef IOT_GURU_BASE_URL
             &&
           !(
             (Settings.iotGuruNodeKey[0] == 0x00)
             ||
             (Settings.iotGuruNodeKey[0] == '-' && Settings.iotGuruNodeKey[1] == 0x00)
           )
+#endif
       )
       {
+#ifdef IOT_GURU_BASE_URL
         HTTPClient httpClient;
         String nodeKey = String(Settings.iotGuruNodeKey);
         String url;
@@ -265,6 +268,7 @@ void DhtShow(bool json)
           AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
           AddLog_P2(LOG_LEVEL_DEBUG, PSTR("Temp send. exitcode=%d"), code);
         }
+#endif
 
         if (!isnan(Dht[i].h)) {
           url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
