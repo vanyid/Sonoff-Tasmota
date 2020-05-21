@@ -713,6 +713,59 @@ void TempHumDewShow(bool json, bool pass_on, const char *types, float f_temperat
     ResponseAppend_P(PSTR(",\"%s\":{"), types);
     ResponseAppendTHD(f_temperature, f_humidity);
     ResponseJsonEnd();
+#ifdef IOT_GURU_BASE_URL
+        if ( (pass_on) &&
+          !(
+            (Settings.iotGuruNodeKey[0] == 0x00)
+            ||
+            (Settings.iotGuruNodeKey[0] == '-' && Settings.iotGuruNodeKey[1] == 0x00)
+          )
+          )
+      {
+        char parameter[FLOATSZ];
+        HTTPClient httpClient;
+        String nodeKey = String(Settings.iotGuruNodeKey);
+        String url;
+        int code;
+        char locaseType[12];
+
+        LowerCase(locaseType, types);
+
+        if (!isnan(f_temperature)) {
+          dtostrfd(f_temperature, Settings.flag2.temperature_resolution, parameter);
+          url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
+                "/" + locaseType + "_" + "temperature" + "/" + parameter;
+          httpClient.useHTTP10(true);
+          httpClient.setTimeout(1000);
+
+          yield();
+          httpClient.begin(url);
+          code = httpClient.GET();
+          httpClient.end();
+          yield();
+
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("Temp send. exitcode=%d"), code);
+        }
+
+        if (!isnan(f_humidity)) {
+          dtostrfd(f_humidity, Settings.flag2.humidity_resolution, parameter);
+          url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
+                "/" + locaseType + "_" + "humidity" + "/" + parameter;
+          httpClient.useHTTP10(true);
+          httpClient.setTimeout(1000);
+
+          yield();
+          httpClient.begin(url);
+          code = httpClient.GET();
+          httpClient.end();
+          yield();
+
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
+          AddLog_P2(LOG_LEVEL_DEBUG, PSTR("humidity send. exitcode=%d"), code);
+        }
+      }
+#endif    
 #ifdef USE_DOMOTICZ
     if (pass_on) {
       DomoticzTempHumPressureSensor(f_temperature, f_humidity);
