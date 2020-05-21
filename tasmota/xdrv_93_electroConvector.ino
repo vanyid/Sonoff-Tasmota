@@ -124,6 +124,7 @@
 #ifdef USE_ELECTRO_CONVECTOR_HEATER
 
 # include "PID.h"
+# include "Timeprop.h"
 
 #define D_CMND_PID "pid_"
 
@@ -154,16 +155,148 @@ static boolean run_pid_now = false;     // tells PID_Every_Second to run the pid
 static boolean reinit_timeprop = false;
 static double pid_output;
 
+static bool heater_enabled = true;
+static bool heater_configured; 
+
+/* ********************** TimeProp function ******************** */
+static uint16_t enabledStages; /* bitfield */
+static bool timeprop_enabled = true;
+static int outPin[2];
+static Timeprop timeprops[TIMEPROP_NUM_OUTPUTS];
+static uint16_t currentRelayStates = 0;  // current actual relay states. Bit 0 first relay
+
+
+
 static  double outpower[2] = { 400, 1250 };
 static  double powerDistr[2] = { outpower[0] / (outpower[0] + outpower[1]), outpower[1] / (outpower[0] + outpower[1]) };  // 0.33, 0.66
 static  double powerRate = outpower[0] / outpower[1];          
 
+
+
+/******************* T I M E  P R O P ************************************/
+
+void TimePropInit()
+{
+  snprintf_P(log_data, sizeof(log_data), "Timeprop Init");
+  AddLog(LOG_LEVEL_INFO);
+  int cycleTimes[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_CYCLETIMES};
+  int deadTimes[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_DEADTIMES};
+  int opInverts[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_OPINVERTS};
+  int fallbacks[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_FALLBACK_POWERS};
+  int maxIntervals[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_MAX_UPDATE_INTERVALS};
+
+  for (int i=0; i<TIMEPROP_NUM_OUTPUTS; i++) {
+    timeprops[i].initialise(cycleTimes[i], deadTimes[i], opInverts[i], fallbacks[i],
+      maxIntervals[i], UtcTime());
+  }
+}
+
+void Timeprop_Every_Second() {
+  for (int i=0; i<TIMEPROP_NUM_OUTPUTS; i++) {
+    int newState = timeprops[i].tick(UtcTime());
+    if (newState != bitRead(currentRelayStates, i)){
+      ExecuteCommandPower(
+        i + 1, 
+        newState ? POWER_ON : POWER_OFF, 
+        SRC_HEATER);
+
+/*      
+      if (newState) {
+        digitalWrite(outPin[i], HIGH);
+        bitSet(currentRelayStates, i);
+      }
+      else {
+        digitalWrite(outPin[i], LOW);
+        bitClear(currentRelayStates, i);
+      }
+
+      XdrvMailbox.index = currentRelayStates;
+      XdrvCall(FUNC_SET_POWER);
+*/
+    }
+  }
+}
+
+void TimePropShowSensor(bool json)
+{
+  char tmpStr[33];
+
+  if (json)
+  {
+    Response_P("");
+    ResponseAppendTime();
+  }
+
+  for (int i = 0; i < TIMEPROP_NUM_OUTPUTS; i++)
+  {
+    if (json) /* --- MQTT resposne --- */
+    {
+
+      ResponseAppend_P(PSTR(",\"Output_%d\":{"), i);
+
+        dtostrfd(timeprops[i].getEffectivePower(), 3, tmpStr);
+        ResponseAppend_P(PSTR("\"EffectivePower\":\"%s\","), tmpStr);
+
+        dtostrfd(timeprops[i].getRemainWindowTime(), 3, tmpStr);
+        ResponseAppend_P(PSTR("\"RemainWindowTime\":\"%s\""), tmpStr);
+
+      ResponseAppend_P(PSTR("}"));
+    }
+    else /* --- WEB sensor --- */
+    {
+      dtostrfd(timeprops[i].getRemainWindowTime(), 3, tmpStr);
+      WSContentSend_PD(PSTR("{s}Propotional window %d:{m}%s{e}"), i, tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
+
+      dtostrfd(timeprops[i].getEffectivePower(), 3, tmpStr);
+      WSContentSend_PD(PSTR("{s}Effective Power %d:{m}%s{e}"), i, tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
+    }
+  }
+
+  if (json)
+  {
+    ResponseAppend_P(PSTR("}"));
+  }
+}
+
+
+
+/* call this from elsewhere if required to set the power value for one of the timeprop instances */
+/* index specifies which one, 0 up */
+void Timeprop_Set_Power( int index, float power, boolean actNow )
+{
+  if (index >= 0  &&  index < TIMEPROP_NUM_OUTPUTS)
+  {
+    if (actNow) { timeprops[index].ReSetPower( power, UtcTime()); }
+    else        { timeprops[index].setPower  ( power, UtcTime()); }
+  }
+}
+
+// called by the system each time a relay state is changed
+void Timeprop_Xdrv_Power() {
+  // for a single relay the state is in the lsb of index, I have think that for
+  // multiple outputs then succesive bits will hold the state but have not been
+  // able to test that
+  currentRelayStates = XdrvMailbox.index;
+}
+
+
+/**************************** P I D *************************************/
+
+
 void PID_Init()
 {
+  /* no heater stage configure -> skip PID init and disable function */
+  if (!heater_configured) {
+    heater_enabled = false;
+    return;
+  }
+
+
   snprintf_P(log_data, sizeof(log_data), "PID Init");
   AddLog(LOG_LEVEL_INFO);
   pid.initialise( PID_SETPOINT, PID_PROPBAND, PID_INTEGRAL_TIME, PID_DERIVATIVE_TIME, PID_INITIAL_INT,
     PID_MAX_INTERVAL, PID_DERIV_SMOOTH_FACTOR, PID_AUTO, PID_MANUAL_POWER );
+
 }
 
 void PID_Every_Second() {
@@ -228,27 +361,35 @@ void PID_Show_Sensor() {
   }
 
 #ifdef IOT_GURU_BASE_URL
-  HTTPClient httpClient;
-  String nodeKey = String(Settings.iotGuruNodeKey);
-  String url;
-  int code;
-  char tmpStr[10];
+  if (!(
+        (Settings.iotGuruNodeKey[0] == 0x00)
+        ||
+        (Settings.iotGuruNodeKey[0] == '-' && Settings.iotGuruNodeKey[1] == 0x00)
+        )
+      )
+  {
+    HTTPClient httpClient;
+    String nodeKey = String(Settings.iotGuruNodeKey);
+    String url;
+    int code;
+    char tmpStr[10];
 
-  dtostrfd(pid_output * (outpower[0] + outpower[1]), 1, tmpStr);
-  url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
-        "/heater_power/" + String(tmpStr);
+    dtostrfd(pid_output * (outpower[0] + outpower[1]), 1, tmpStr);
+    url = String(IOT_GURU_BASE_URL) + "measurement/create/" + nodeKey +
+          "/heater_power/" + String(tmpStr);
 
-  httpClient.useHTTP10(true);
-  httpClient.setTimeout(1000);
+    httpClient.useHTTP10(true);
+    httpClient.setTimeout(1000);
 
-  yield();
-  httpClient.begin(url);
-  code = httpClient.GET();
-  httpClient.end();
-  yield();
+    yield();
+    httpClient.begin(url);
+    code = httpClient.GET();
+    httpClient.end();
+    yield();
 
-  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
-  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("PID power send. exitcode=%d"), code);
+    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("url:%s"), url.c_str());
+    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("PID power send. exitcode=%d"), code);
+  }
 #endif
 
 }
@@ -409,6 +550,29 @@ static void run_pid()
 #endif // PID_USE_TIMPROP
 }
 
+
+bool eConvectorPinState()
+{
+  bool ret = false;
+  int relayId;
+
+  if ( (XdrvMailbox.index >= GPIO_HEATER_STAGE1) && (XdrvMailbox.index <= GPIO_HEATER_STAGE2) )
+  {
+    relayId = XdrvMailbox.index - GPIO_HEATER_STAGE1;
+    outPin[relayId] = XdrvMailbox.payload;
+
+    XdrvMailbox.index = GPIO_REL1 + relayId;  /* set the output as default relay */
+
+    heater_configured = true;
+    ret = true;
+
+    AddLog_P2(LOG_LEVEL_INFO,
+              PSTR("HEAT: Stage%d on pin: %d activated"),
+              relayId, outPin[relayId]);
+  }
+  return ret;
+}
+
 /*********************************************************************************************\
  * Interface
 \*********************************************************************************************/
@@ -420,32 +584,51 @@ boolean Xdrv93(byte function)
   boolean result = false;
   char tmpStr[33];
 
+  /* the function is not configured skip it */
+  if (!heater_enabled)
+  {
+    return false;
+  }
+
   switch (function) {
-  case FUNC_INIT:
-    PID_Init();
+    case FUNC_INIT:
+      PID_Init();
+      TimePropInit();
+      break;
+    case FUNC_EVERY_SECOND:
+      PID_Every_Second();
+      Timeprop_Every_Second();
+      break;
+    case FUNC_SET_POWER:
+      Timeprop_Xdrv_Power();
+      TimePropShowSensor(true);
+      break;
+    case FUNC_SHOW_SENSOR:
+      // only use this if the pid loop is to use the local sensor for pv
+      #if defined PID_USE_LOCAL_SENSOR
+        PID_Show_Sensor();
+      #endif // PID_USE_LOCAL_SENSOR
+      TimePropShowSensor(true);
+      break;
+  #ifdef USE_WEBSERVER
+    case FUNC_WEB_SENSOR:
+      TimePropShowSensor(false);
+
+      dtostrfd(pid_output, 3, tmpStr);
+      WSContentSend_PD(PSTR("{s}PID factor:{m}%s{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
+      dtostrfd(pid_output * (outpower[0] + outpower[1]), 1, tmpStr);
+      WSContentSend_PD(PSTR("{s}Needed power:{m}%s " D_UNIT_WATT "{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
+      dtostrfd(pid.getSp(), 1, tmpStr);
+      WSContentSend_PD(PSTR("{s}Thermostat setpoint:{m}%s&deg;{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
     break;
-  case FUNC_EVERY_SECOND:
-    PID_Every_Second();
-    break;
-  case FUNC_SHOW_SENSOR:
-    // only use this if the pid loop is to use the local sensor for pv
-    #if defined PID_USE_LOCAL_SENSOR
-      PID_Show_Sensor();
-    #endif // PID_USE_LOCAL_SENSOR
-    break;
-#ifdef USE_WEBSERVER
-  case FUNC_WEB_SENSOR:
-    dtostrfd(pid_output, 3, tmpStr);
-    WSContentSend_PD(PSTR("{s}PID factor:{m}%s{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
-    dtostrfd(pid_output * (outpower[0] + outpower[1]), 1, tmpStr);
-    WSContentSend_PD(PSTR("{s}Needed power:{m}%s " D_UNIT_WATT "{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
-    dtostrfd(pid.getSp(), 1, tmpStr);
-    WSContentSend_PD(PSTR("{s}Thermostat setpoint:{m}%s&deg;{e}"), tmpStr);  // {s} = <tr><th>, {m} = </th><td>, {e} = </td></tr>
-  break;
-#endif
-  case FUNC_COMMAND:
-    result = PID_Command();
-    break;
+  #endif
+    case FUNC_COMMAND:
+      result = PID_Command();
+      break;
+
+    case FUNC_PIN_STATE:
+      result = eConvectorPinState();
+      break;
   }
   return result;
 }

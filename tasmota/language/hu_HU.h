@@ -719,6 +719,8 @@
 #define D_SENSOR_TCP_RXD       "TCP Rx"
 #define D_SENSOR_IEM3000_TX    "iEM3000 TX"
 #define D_SENSOR_IEM3000_RX    "iEM3000 RX"
+#define D_SENSOR_HEATER_STAGE1  "EKályha I"
+#define D_SENSOR_HEATER_STAGE2  "EKályha II"
 
 // Units
 #define D_UNIT_AMPERE "A"

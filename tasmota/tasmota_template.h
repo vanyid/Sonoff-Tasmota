@@ -243,6 +243,8 @@ enum UserSelectablePins {
   GPIO_IEM3000_RX,     // IEM3000 Serial interface
   GPIO_ZIGBEE_RST,     // Zigbee reset
   GPIO_DYP_RX,
+  GPIO_HEATER_STAGE1,  // Electric convector low power stage
+  GPIO_HEATER_STAGE2,  // Electric convector high power stage
   GPIO_SENSOR_END };
 
 // Programmer selectable GPIO functionality
@@ -340,6 +342,7 @@ const char kSensorNames[] PROGMEM =
   D_SENSOR_IEM3000_TX "|" D_SENSOR_IEM3000_RX "|"
   D_SENSOR_ZIGBEE_RST "|"
   D_SENSOR_DYP_RX
+  D_SENSOR_HEATER_STAGE1 "|" D_SENSOR_HEATER_STAGE2
   ;
 
 const char kSensorNamesFixed[] PROGMEM =
@@ -715,6 +718,9 @@ const uint8_t kGpioNiceList[] PROGMEM = {
 #ifdef USE_TELEINFO
   GPIO_TELEINFO_RX,
   GPIO_TELEINFO_ENABLE,
+#ifdef USE_ELECTRO_CONVECTOR_HEATER
+  GPIO_HEATER_STAGE1,  // Electric convector low power stage
+  GPIO_HEATER_STAGE2,  // Electric convector high power stage
 #endif
 };
 

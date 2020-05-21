@@ -78,7 +78,7 @@
 **/
 
 
-#ifdef USE_TIMEPROP
+#ifdef USE_TIMEPROP_STANDALONE
 
 # include "Timeprop.h"
 
@@ -91,6 +91,9 @@ const char kTimepropCommands[] PROGMEM = D_CMND_TIMEPROP_SETPOWER;
 static Timeprop timeprops[TIMEPROP_NUM_OUTPUTS];
 static int relayNos[TIMEPROP_NUM_OUTPUTS] = {TIMEPROP_RELAYS};
 static long currentRelayStates = 0;  // current actual relay states. Bit 0 first relay
+
+
+
 
 /* call this from elsewhere if required to set the power value for one of the timeprop instances */
 /* index specifies which one, 0 up */
@@ -106,6 +109,26 @@ void Timeprop_Set_Power( int index, float power, boolean actNow )
 void Timeprop_Init()
 {
   unsigned long preTime;
+
+  if (enabledStages == 0) {
+    timeprop_enabled = false;
+    return;
+  }
+
+
+  if (pin[GPIO_HEATER_STAGE1] < 99 && bitRead(enabledStages, 0))
+  {
+    pinMode(outPin[0], OUTPUT);
+    digitalWrite(outPin[0], LOW);
+  }
+
+  if (pin[GPIO_HEATER_STAGE1] < 99 && bitRead(enabledStages, 1))
+  {
+    pinMode(outPin[1], OUTPUT);
+    digitalWrite(outPin[1], LOW);
+  }
+
+
 
   snprintf_P(log_data, sizeof(log_data), "Timeprop Init");
   AddLog(LOG_LEVEL_INFO);
@@ -125,8 +148,7 @@ void Timeprop_Every_Second() {
   for (int i=0; i<TIMEPROP_NUM_OUTPUTS; i++) {
     int newState = timeprops[i].tick(UtcTime());
     if (newState != bitRead(currentRelayStates, relayNos[i]-1)){
-      // remove the third parameter below if using tasmota prior to v6.0.0
-      ExecuteCommandPower(relayNos[i], newState, SRC_IGNORE);
+      digitalWrite(outPin[i], newState ? HIGH : LOW);
     }
   }
 }
@@ -194,7 +216,7 @@ boolean Timeprop_Command()
   return serviced;
 }
 
-void ShowSensor(bool json)
+void TimePropShowSensor(bool json)
 {
   char tmpStr[33];
 
@@ -234,6 +256,32 @@ void ShowSensor(bool json)
     ResponseAppend_P(PSTR("}"));
   }
 }
+
+
+bool TimePropPinState()
+{
+  bool ret = false;
+
+  if (XdrvMailbox.index == GPIO_HEATER_STAGE1)
+  {
+    outPin[0] = XdrvMailbox.payload;
+    enabledStages |= 0x01;
+    ret = true;
+  }
+  else if  (XdrvMailbox.index == GPIO_HEATER_STAGE2)
+  {
+    outPin[1] = XdrvMailbox.payload;
+    enabledStages |= 0x02;
+    ret = true;
+  }
+  else
+  {
+    XdrvMailbox.index = 0;
+  }
+
+  return ret;
+}
+
 /*********************************************************************************************\
  * Interface
 \*********************************************************************************************/
@@ -245,6 +293,10 @@ boolean Xdrv91(byte function)
   boolean result = false;
   char tmpStr[33];
   int i;
+
+  if (!timeprop_enabled) {
+    return false;
+  }
 
   switch (function) {
   case FUNC_INIT:
@@ -268,6 +320,9 @@ boolean Xdrv91(byte function)
     ShowSensor(false);
   break;
 #endif
+    case FUNC_PIN_STATE:
+      result = TimePropPinState();
+      break;
   }
   return result;
 }
